@@ -12,3 +12,31 @@ export const nutritionalCalculationSchema = z.object({
   surfaceHa: z.number().nonnegative().default(0),
   evCoefficient: z.number().positive().default(1.0),
 });
+
+export const pearsonRationSchema = z.object({
+  targetCmsKgDay: z
+    .number()
+    .positive("El consumo de MS objetivo debe ser mayor a 0"),
+  forageCpPercent: z
+    .number()
+    .nonnegative("El % de PB del forraje no puede ser negativo"),
+  concentrateCpPercent: z
+    .number()
+    .positive("El % de PB del concentrado debe ser mayor a 0"),
+  targetCpPercent: z
+    .number()
+    .positive("El % de PB objetivo debe ser mayor a 0"),
+  concentrateDmPercent: z.number().positive().default(87.0),
+  headCount: z.number().int().positive().default(1),
+});
+
+export const grazingStripSchema = z.object({
+  availableForageKgHa: z
+    .number()
+    .positive("La disponibilidad debe ser mayor a 0 kg MS/ha"),
+  grazingEfficiencyPercent: z.number().positive().max(100).default(55.0),
+  totalEv: z.number().positive("Las EV totales deben ser mayores a 0"),
+  evIntakeKgDay: z.number().positive().default(10.0),
+  occupationDays: z.number().int().positive().default(1),
+  headCount: z.number().int().positive().default(1),
+});

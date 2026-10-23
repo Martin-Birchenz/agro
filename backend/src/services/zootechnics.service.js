@@ -133,3 +133,120 @@ export const calculateStockingRate = ({
     stockingRateEvHa,
   };
 };
+
+/**
+ * MÓDULO 02: FORMULACIÓN DE RACIÓN (Cuadrado de Pearson)
+ * Mezcla binaria: Forraje base + Concentrado proteico
+ * @param {Object} params
+ * @param {number} params.targetCmsKgDay - Consumo total de MS objetivo (CMS_tot, kg MS/cab/día)
+ * @param {number} params.forageCpPercent - % Proteína Bruta del forraje base (%PB_forr)
+ * @param {number} params.concentrateCpPercent - % Proteína Bruta del concentrado (%PB_conc)
+ * @param {number} params.targetCpPercent - % Proteína Bruta objetivo de la dieta total (%PB_obj)
+ * @param {number} params.concentrateDmPercent - % Materia Seca del concentrado (%MS_conc, ej: 87.0)
+ * @param {number} params.headCount - Cantidad de cabezas del lote (N)
+ */
+
+export const calculatePearsonRation = ({
+  targetCmsKgDay,
+  forageCpPercent,
+  concentrateCpPercent,
+  targetCpPercent,
+  concentrateDmPercent = 87.0,
+  headCount = 1,
+}) => {
+  // Validación biológica: el objetivo de PB debe estar estrictamente entre ambos alimentos
+  if (
+    targetCpPercent < forageCpPercent ||
+    targetCpPercent > concentrateCpPercent
+  ) {
+    throw new Error(
+      `La PB objetivo (${targetCpPercent}%) debe estar comprendida entre la PB del forraje (${forageCpPercent}%) y la del concentrado (${concentrateCpPercent}%).`,
+    );
+  }
+
+  // Conc_MS = CMS_tot * ((PB_obj - PB_forr) / (PB_conc - PB_forr))
+  const concentrateMsKgDay = Number(
+    (
+      targetCmsKgDay *
+      ((targetCpPercent - forageCpPercent) /
+        (concentrateCpPercent - forageCpPercent))
+    ).toFixed(4),
+  );
+
+  // Forr_MS = CMS_tot - Conc_MS
+  const forageMsKgDay = Number(
+    (targetCmsKgDay - concentrateMsKgDay).toFixed(4),
+  );
+
+  // Conc_TC = Conc_MS / (%MS_conc / 100) (Kilos tal cual por animal/día)
+  const concentrateTcKgDay = Number(
+    (concentrateMsKgDay / (concentrateDmPercent / 100)).toFixed(2),
+  );
+
+  // Conc_lote = Conc_TC * N (Kilos tal cual diarios para todo el rodeo)
+  const concentrateBatchTcKgDay = Number(
+    (concentrateTcKgDay * headCount).toFixed(2),
+  );
+
+  return {
+    concentrateMsKgDay,
+    forageMsKgDay,
+    concentrateTcKgDay,
+    concentrateBatchTcKgDay,
+  };
+};
+
+/**
+ * MÓDULO 04: ASIGNACIÓN FORRAJERA Y FRANJAS
+ * Pastoreo rotativo / parcelas diarias
+ * @param {Object} params
+ * @param {number} params.availableForageKgHa - Disponibilidad total de forraje (Disp, kg MS/ha)
+ * @param {number} params.grazingEfficiencyPercent - Eficiencia de pastoreo / aprovechamiento (%EP, ej: 55.0)
+ * @param {number} params.totalEv - Equivalencias Bovina totales del lote (EV_tot)
+ * @param {number} params.evIntakeKgDay - Consumo estándar por EV (estándar: 8.2 o 10.0 kg MS/EV/día)
+ * @param {number} params.occupationDays - Días de permanencia en la parcela (Días_oc, ej: 1)
+ * @param {number} params.headCount - Cantidad de cabezas (N)
+ */
+
+export const calculateGrazingStrip = ({
+  availableForageKgHa,
+  grazingEfficiencyPercent = 55.0,
+  totalEv,
+  evIntakeKgDay = 10.0,
+  occupationDays = 1,
+  headCount = 1,
+}) => {
+  // Forraje aprovechable = Disp * (%EP / 100) (kg MS/ha)
+  const usableForageKgHa = Number(
+    (availableForageKgHa * (grazingEfficiencyPercent / 100)).toFixed(2),
+  );
+
+  if (usableForageKgHa <= 0) {
+    throw new Error(
+      "El forraje aprovechable no puede ser menor o igual a cero.",
+    );
+  }
+
+  // Demanda total de la franja = EV_tot * Cons_EV * Días_oc (kg MS)
+  const stripDemandKgMs = totalEv * evIntakeKgDay * occupationDays;
+
+  // Sup_franja = Demanda / Forraje aprovechable (ha)
+  const stripSurfaceHa = Number(
+    (stripDemandKgMs / usableForageKgHa).toFixed(4),
+  );
+  const stripSurfaceM2 = Number((stripSurfaceHa * 10000).toFixed(1));
+
+  // Asignación diaria individual = (EV_tot * Cons_EV * Días_oc) / ((%EP / 100) * N)
+  const allowancePerHeadKgDay = Number(
+    (stripDemandKgMs / ((grazingEfficiencyPercent / 100) * headCount)).toFixed(
+      2,
+    ),
+  );
+
+  return {
+    usableForageKgHa,
+    stripSurfaceHa,
+    stripSurfaceM2,
+    allowancePerHeadKgDay,
+  };
+};
