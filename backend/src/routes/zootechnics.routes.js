@@ -5,6 +5,8 @@ import {
   nutritionalCalculationSchema,
   pearsonRationSchema,
   grazingStripSchema,
+  feedConversionSchema,
+  waterBalanceSchema,
 } from "../schemas/zootechnics.schema.js";
 
 const router = Router();
@@ -25,6 +27,18 @@ router.post(
   "/grazing-strip",
   validate(grazingStripSchema),
   zootechnicsController.calculateStrip,
+);
+
+router.post(
+  "/feed-conversion",
+  validate(feedConversionSchema),
+  zootechnicsController.calculateConversion,
+);
+
+router.post(
+  "/water-balance",
+  validate(waterBalanceSchema),
+  zootechnicsController.calculateWater,
 );
 
 export default router;

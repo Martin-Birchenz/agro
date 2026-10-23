@@ -3,6 +3,8 @@ import {
   calculateStockingRate,
   calculatePearsonRation,
   calculateGrazingStrip,
+  calculateFeedConversion,
+  calculateWaterBalance,
 } from "../services/zootechnics.service.js";
 import { sendSuccess } from "../middlewares/response.middleware.js";
 
@@ -52,7 +54,6 @@ class ZootechnicsController {
       next(error);
     }
   }
-
   calculateStrip(req, res, next) {
     try {
       const result = calculateGrazingStrip(req.body);
@@ -60,6 +61,32 @@ class ZootechnicsController {
         res,
         result,
         "Franja forrajera y asignación calculada con éxito",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+  calculateConversion(req, res, next) {
+    try {
+      const result = calculateFeedConversion(req.body);
+      return sendSuccess(
+        res,
+        result,
+        "Conversión alimenticia calculada con éxito",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+  calculateWater(req, res, next) {
+    try {
+      const result = calculateWaterBalance(req.body);
+      return sendSuccess(
+        res,
+        result,
+        "Balance hídrico y autonomía calculados con éxito",
         200,
       );
     } catch (error) {

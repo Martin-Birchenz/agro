@@ -250,3 +250,110 @@ export const calculateGrazingStrip = ({
     allowancePerHeadKgDay,
   };
 };
+
+/**
+ * MÓDULO 05: CONVERSIÓN ALIMENTICIA (CA)
+ * Eficiencia biológica de transformación de alimento en carne
+ * @param {Object} params
+ * @param {number} params.consumedDmKg - Total de Materia Seca consumida en el período (Cons_MS, kg MS)
+ * @param {number} params.initialWeight - Peso vivo inicial (PV_i, kg)
+ * @param {number} params.finalWeight - Peso vivo final (PV_f, kg)
+ * @param {number} params.feedDmPercent - % de Materia Seca del alimento (%MS, ej: 88.0)
+ * @param {number} params.headCount - Cantidad de cabezas del lote (N)
+ * @param {number} params.mortalityPercent - % de mortandad estimada (%Mort, ej: 1.5)
+ */
+
+export const calculateFeedConversion = ({
+  consumedDmKg,
+  initialWeight,
+  finalWeight,
+  feedDmPercent = 88.0,
+  headCount = 1,
+  mortalityPercent = 0.0,
+}) => {
+  const gainPerHead = finalWeight - initialWeight;
+  if (gainPerHead <= 0) {
+    throw new Error(
+      "El peso final debe ser mayor al peso inicial para calcular conversión alimenticia.",
+    );
+  }
+
+  // CA_MS = Cons_MS / (PV_f - PV_i) (kg MS consumida / kg PV ganado)
+  const caMs = Number((consumedDmKg / gainPerHead).toFixed(2));
+
+  // CA_TC = (Cons_MS / (%MS / 100)) / (PV_f - PV_i) (kg Tal Cual / kg PV ganado)
+  const feedTcKg = consumedDmKg / (feedDmPercent / 100);
+  const caTc = Number((feedTcKg / gainPerHead).toFixed(2));
+
+  // Kilos_lote = (PV_f - PV_i) * N * (1 - %Mort / 100) (Kilos netos producidos)
+  const effectiveSurvivalFactor = Math.max(0, 1 - mortalityPercent / 100);
+  const batchTotalGainKg = Number(
+    (gainPerHead * headCount * effectiveSurvivalFactor).toFixed(2),
+  );
+
+  return {
+    gainPerHeadKg: Number(gainPerHead.toFixed(2)),
+    caMs,
+    caTc,
+    batchTotalGainKg,
+  };
+};
+
+/**
+ * MÓDULO 09: BALANCE HÍDRICO GANADERO
+ * Requerimiento de agua con estrés térmico y autonomía de reserva
+ * @param {Object} params
+ * @param {number} params.cmsKgDay - Consumo de Materia Seca diario (CMS, kg MS/cab/día)
+ * @param {number} params.categoryFactor - Factor de categoría (F_cat, ej: 1.0)
+ * @param {number} params.ambientTempC - Temperatura ambiente (°C)
+ * @param {number} params.heatIncrementPercent - % incremento por cada °C arriba de 25°C (%Calor, ej: 4.0)
+ * @param {number} params.headCount - Número de animales (N)
+ * @param {number} params.tankCapacityLiters - Capacidad del tanque o aguada (L)
+ * @param {number} params.baseWaterLPerKgMs - Litros base por kg MS (estándar: 4.0 L/kg MS)
+ */
+
+export const calculateWaterBalance = ({
+  cmsKgDay,
+  categoryFactor = 1.0,
+  ambientTempC = 20.0,
+  heatIncrementPercent = 4.0,
+  headCount = 1,
+  tankCapacityLiters = 0,
+  baseWaterLPerKgMs = 4.0,
+}) => {
+  // Agua_base = Cons_base * CMS * F_cat (L/cab/día)
+  const baseWaterPerHeadLDay = baseWaterLPerKgMs * cmsKgDay * categoryFactor;
+
+  // Grados por encima de 25 °C que disparan estrés calórico
+  const excessTemp = Math.max(0, ambientTempC - 25.0);
+
+  // Agua_calor = Agua_base * [max(0, Temp - 25) * (%Calor / 100)]
+  const heatStressWaterLDay =
+    baseWaterPerHeadLDay * (excessTemp * (heatIncrementPercent / 100));
+
+  // Agua_cab = Agua_base + Agua_calor
+  const totalWaterPerHeadLDay = Number(
+    (baseWaterPerHeadLDay + heatStressWaterLDay).toFixed(2),
+  );
+
+  // Demanda total del lote = Agua_cab * N
+  const batchWaterTotalLDay = Number(
+    (totalWaterPerHeadLDay * headCount).toFixed(2),
+  );
+
+  // Autonomía = Tanque / (Agua_cab * N) (días de reserva)
+  let tankAutonomyDays = null;
+  if (tankCapacityLiters > 0 && batchWaterTotalLDay > 0) {
+    tankAutonomyDays = Number(
+      (tankCapacityLiters / batchWaterTotalLDay).toFixed(2),
+    );
+  }
+
+  return {
+    baseWaterPerHeadLDay: Number(baseWaterPerHeadLDay.toFixed(2)),
+    heatStressWaterLDay: Number(heatStressWaterLDay.toFixed(2)),
+    totalWaterPerHeadLDay,
+    batchWaterTotalLDay,
+    tankAutonomyDays,
+  };
+};
