@@ -357,3 +357,326 @@ export const calculateWaterBalance = ({
     tankAutonomyDays,
   };
 };
+
+/**
+ * MÓDULO 03: CARGA ANIMAL Y RECEPTIVIDAD FORRAJERA
+ */
+
+export const calculateStockingAndCarryingCapacity = ({
+  headCount,
+  evPerHead = 1.0,
+  surfaceHa,
+  annualDmForageProdKgHa,
+  forageUtilizationPercent = 50.0,
+  annualDays = 365,
+  dailyDmPerEvKg = 8.2, // Estándar oficial INTA: 8.2 kg MS/EV/día
+}) => {
+  if (surfaceHa <= 0) throw new Error("La superficie debe ser mayor a 0 ha.");
+
+  const totalEv = Number((headCount * evPerHead).toFixed(2));
+  const currentStockingEvHa = Number((totalEv / surfaceHa).toFixed(2));
+  const annualDemandPerEvKg = dailyDmPerEvKg * annualDays; // ~2993 kg MS/EV/año
+
+  const usableForageKgHa =
+    annualDmForageProdKgHa * (forageUtilizationPercent / 100);
+  const carryingCapacityEvHa = Number(
+    (usableForageKgHa / annualDemandPerEvKg).toFixed(2),
+  );
+  const totalCarryingCapacityEv = carryingCapacityEvHa * surfaceHa;
+  const evBalance = Number((totalCarryingCapacityEv - totalEv).toFixed(2));
+
+  return {
+    totalEv,
+    currentStockingEvHa,
+    annualDemandPerEvKg,
+    carryingCapacityEvHa,
+    evBalance,
+  };
+};
+
+/**
+ * MÓDULO 07: DOSIFICACIÓN DE ANTIPARASITARIOS Y RETIRO
+ */
+
+export const calculateAntiparasiticDosing = ({
+  avgWeightKg,
+  dosePer50KgMl,
+  headCount = 1,
+  withdrawalPeriodDays = 0,
+  daysSinceApplication = 0,
+  daysUntilSale = 0,
+}) => {
+  // Dosis_cab = PV_prom * (Dosis_50 / 50) (mL/cab)
+  const dosePerHeadMl = Number((avgWeightKg * (dosePer50KgMl / 50)).toFixed(2));
+  const totalVolumeMl = Number((dosePerHeadMl * headCount).toFixed(2));
+  const remainingWithdrawalDays = Math.max(
+    0,
+    withdrawalPeriodDays - daysSinceApplication,
+  );
+  const safetyMarginDays = daysUntilSale - remainingWithdrawalDays;
+
+  return {
+    dosePerHeadMl,
+    totalVolumeMl,
+    remainingWithdrawalDays,
+    safetyMarginDays,
+    canBeMarketed: remainingWithdrawalDays === 0,
+  };
+};
+
+/**
+ * MÓDULO 08: CALENDARIO SANITARIO ANUAL
+ */
+
+export const calculateSanitaryCalendar = ({
+  headCount,
+  heiferCalvesCount = 0,
+  aftosaDosesPerYear = 2,
+  clostridialDosesPerYear = 2,
+  reproductiveDosesPerYear = 2,
+  vaccineIntervalDays = 180,
+  daysSinceLastVaccine = 0,
+}) => {
+  const totalAnnualDoses =
+    headCount *
+      (aftosaDosesPerYear +
+        clostridialDosesPerYear +
+        reproductiveDosesPerYear) +
+    heiferCalvesCount; // Brucelosis en terneras
+  const daysToNextApplication = Math.max(
+    0,
+    vaccineIntervalDays - daysSinceLastVaccine,
+  );
+
+  return {
+    totalAnnualDoses,
+    daysToNextApplication,
+  };
+};
+
+/**
+ * MÓDULO 10: CONDICIÓN CORPORAL (CC) Y PREÑEZ PROYECTADA
+ */
+
+export const calculateBodyConditionAndPregnancy = ({
+  currentScore,
+  targetScore = 3.0,
+  targetPregnancyPercent = 90.0,
+  penaltyPerUnitPercent = 15.0,
+  kgPerScoreUnit = 32.0, // Promedio 30-35 kg por punto de CC escala 1-5
+  daysToMating = 60,
+}) => {
+  const scoreGap = Math.max(0, targetScore - currentScore);
+  const estimatedPregnancyPercent = Number(
+    Math.max(
+      0,
+      Math.min(
+        targetPregnancyPercent,
+        targetPregnancyPercent - scoreGap * penaltyPerUnitPercent,
+      ),
+    ).toFixed(2),
+  );
+
+  const kgToRecover = Number((scoreGap * kgPerScoreUnit).toFixed(2));
+  const requiredGdpvKgDay =
+    daysToMating > 0 && kgToRecover > 0
+      ? Number((kgToRecover / daysToMating).toFixed(3))
+      : 0;
+
+  return {
+    scoreGap: Number(scoreGap.toFixed(2)),
+    estimatedPregnancyPercent,
+    kgToRecover,
+    requiredGdpvKgDay,
+  };
+};
+
+/**
+ * MÓDULO 12: SUPLEMENTACIÓN ESTRATÉGICA Y TASA DE SUSTITUCIÓN
+ */
+
+export const calculateStrategicSupplementation = ({
+  requiredCmsKgDay,
+  pastureOfferingKgDay,
+  substitutionRate = 0.4, // Tasa de sustitución estándar (0 a 1)
+  supplementDmPercent = 88.0,
+  wastePercent = 5.0,
+  headCount = 1,
+  feedingDays = 30,
+}) => {
+  if (substitutionRate >= 1)
+    throw new Error("La tasa de sustitución debe ser menor a 1.0.");
+
+  // Supl_MS = (CMS_req - Oferta_pasto) / (1 - T_sust)
+  const deficit = Math.max(0, requiredCmsKgDay - pastureOfferingKgDay);
+  const supplementDmKgDay = Number(
+    (deficit / (1 - substitutionRate)).toFixed(2),
+  );
+
+  // Supl_TC = (Supl_MS / (%MS / 100)) * (1 + %Perd / 100)
+  const supplementTcKgDay = Number(
+    (
+      (supplementDmKgDay / (supplementDmPercent / 100)) *
+      (1 + wastePercent / 100)
+    ).toFixed(2),
+  );
+
+  // Forr_ahorrado = (Supl_MS * T_sust * N * Dias) / 1000 (tn MS)
+  const savedForageTons = Number(
+    (
+      (supplementDmKgDay * substitutionRate * headCount * feedingDays) /
+      1000
+    ).toFixed(2),
+  );
+
+  return {
+    supplementDmKgDay,
+    supplementTcKgDay,
+    savedForageTons,
+  };
+};
+
+/**
+ * MÓDULO 13: PLANIFICACIÓN DE DESTETE Y RECRÍA
+ */
+
+export const calculateWeaningAndRearingPlan = ({
+  weaningWeightKg,
+  winterGdpvKgDay,
+  winterDays = 90,
+  springGdpvKgDay,
+  targetSaleWeightKg,
+  headCount = 1,
+  mortalityPercent = 1.0,
+}) => {
+  // PV_salida_inv = PV_d + (GDPV_inv * Dias_inv)
+  const springEntryWeightKg = Number(
+    (weaningWeightKg + winterGdpvKgDay * winterDays).toFixed(2),
+  );
+
+  const remainingKgSpring = Math.max(
+    0,
+    targetSaleWeightKg - springEntryWeightKg,
+  );
+  const springDays =
+    springGdpvKgDay > 0 ? Math.round(remainingKgSpring / springGdpvKgDay) : 0;
+  const totalDays = winterDays + springDays;
+
+  // Prod_carne = (PV_obj - PV_d) * N * (1 - %Mort / 100)
+  const netWeightGain = targetSaleWeightKg - weaningWeightKg;
+  const batchMeatProducedKg = Number(
+    (netWeightGain * headCount * (1 - mortalityPercent / 100)).toFixed(2),
+  );
+
+  return {
+    springEntryWeightKg,
+    springDays,
+    totalDays,
+    batchMeatProducedKg,
+  };
+};
+
+/**
+ * MÓDULO 14: FICHA DE RODEO Y BALANCE DE STOCK
+ */
+
+export const calculateHerdStockBalance = ({
+  initialStock,
+  entries = 0,
+  exits = 0,
+  actualStock,
+  weanedCalves = 0,
+  breedingCows = 0,
+}) => {
+  // Stock_teorico = Stock_ini + Entradas - Salidas
+  const theoreticalStock = initialStock + entries - exits;
+  const discrepancy = theoreticalStock - actualStock;
+
+  // % Destete = (Destetados / Vientres) * 100
+  const weaningPercent =
+    breedingCows > 0
+      ? Number(((weanedCalves / breedingCows) * 100).toFixed(2))
+      : null;
+
+  return {
+    theoreticalStock,
+    discrepancy,
+    hasDiscrepancy: discrepancy !== 0,
+    weaningPercent,
+  };
+};
+
+/**
+ * MÓDULO 15: COSTO DIRECTO DEL KILO Y PRECIO DE INDIFERENCIA
+ */
+
+export const calculateDirectCostsAndBreakEven = ({
+  feedingCost,
+  healthCost,
+  structureCost,
+  otherCosts = 0,
+  producedKg,
+  surfaceHa = 1,
+  salePricePerKg,
+}) => {
+  if (producedKg <= 0)
+    throw new Error("Los kilos producidos deben ser mayores a 0.");
+
+  const totalCost = feedingCost + healthCost + structureCost + otherCosts;
+  const costPerKgProduced = Number((totalCost / producedKg).toFixed(2));
+
+  // MB_ha = ((Precio_kg * Prod_kg) - Costo_tot) / Sup
+  const grossMarginTotal = salePricePerKg * producedKg - totalCost;
+  const grossMarginPerHa = Number((grossMarginTotal / surfaceHa).toFixed(2));
+
+  // Kg_equilibrio = Costo_tot / Precio_kg
+  const breakEvenKg = Number((totalCost / salePricePerKg).toFixed(2));
+
+  return {
+    totalCost,
+    costPerKgProduced,
+    grossMarginTotal,
+    grossMarginPerHa,
+    breakEvenKg,
+  };
+};
+
+/**
+ * MÓDULO 16: RELACIÓN COMPRA-VENTA Y MARGEN DE INVERNADA
+ */
+
+export const calculateBuySellMargin = ({
+  entryWeightKg,
+  exitWeightKg,
+  feederPricePerKg, // $/kg Ternero / Invernada
+  fatPricePerKg, // $/kg Gordo
+  addedCostPerKgGained, // Costo de engorde por kg agregado
+}) => {
+  if (exitWeightKg <= entryWeightKg) {
+    throw new Error("El peso de salida debe ser mayor al peso de entrada.");
+  }
+
+  // Rel_CV = P_flaco / P_gordo
+  const buySellRatio = Number((feederPricePerKg / fatPricePerKg).toFixed(3));
+
+  // MB_cab = (PV_out * P_gordo) - (PV_in * P_flaco) - ((PV_out - PV_in) * Cost_agreg)
+  const weightGain = exitWeightKg - entryWeightKg;
+  const grossRevenue = exitWeightKg * fatPricePerKg;
+  const animalPurchaseCost = entryWeightKg * feederPricePerKg;
+  const fatteningCost = weightGain * addedCostPerKgGained;
+
+  const grossMarginPerHead = Number(
+    (grossRevenue - animalPurchaseCost - fatteningCost).toFixed(2),
+  );
+
+  // Cost_eq = ((PV_out * P_gordo) - (PV_in * P_flaco)) / (PV_out - PV_in)
+  const breakEvenCostPerKgGained = Number(
+    ((grossRevenue - animalPurchaseCost) / weightGain).toFixed(2),
+  );
+
+  return {
+    buySellRatio,
+    grossMarginPerHead,
+    breakEvenCostPerKgGained,
+  };
+};

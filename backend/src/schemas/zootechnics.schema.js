@@ -59,3 +59,88 @@ export const waterBalanceSchema = z.object({
   tankCapacityLiters: z.number().nonnegative().default(0),
   baseWaterLPerKgMs: z.number().positive().default(4.0),
 });
+
+export const carryingCapacitySchema = z.object({
+  headCount: z.number().int().positive(),
+  evPerHead: z.number().positive().default(1.0),
+  surfaceHa: z.number().positive(),
+  annualDmForageProdKgHa: z.number().positive(),
+  forageUtilizationPercent: z.number().positive().max(100).default(50.0),
+  annualDays: z.number().int().positive().default(365),
+  dailyDmPerEvKg: z.number().positive().default(8.2),
+});
+
+export const antiparasiticSchema = z.object({
+  avgWeightKg: z.number().positive(),
+  dosePer50KgMl: z.number().positive(),
+  headCount: z.number().int().positive().default(1),
+  withdrawalPeriodDays: z.number().int().nonnegative().default(0),
+  daysSinceApplication: z.number().int().nonnegative().default(0),
+  daysUntilSale: z.number().int().nonnegative().default(0),
+});
+
+export const sanitaryCalendarSchema = z.object({
+  headCount: z.number().int().positive(),
+  heiferCalvesCount: z.number().int().nonnegative().default(0),
+  aftosaDosesPerYear: z.number().int().nonnegative().default(2),
+  clostridialDosesPerYear: z.number().int().nonnegative().default(2),
+  reproductiveDosesPerYear: z.number().int().nonnegative().default(2),
+  vaccineIntervalDays: z.number().int().positive().default(180),
+  daysSinceLastVaccine: z.number().int().nonnegative().default(0),
+});
+
+export const bodyConditionSchema = z.object({
+  currentScore: z.number().min(1).max(5),
+  targetScore: z.number().min(1).max(5).default(3.0),
+  targetPregnancyPercent: z.number().min(0).max(100).default(90.0),
+  penaltyPerUnitPercent: z.number().min(0).max(100).default(15.0),
+  kgPerScoreUnit: z.number().positive().default(32.0),
+  daysToMating: z.number().int().positive().default(60),
+});
+
+export const strategicSupplementationSchema = z.object({
+  requiredCmsKgDay: z.number().positive(),
+  pastureOfferingKgDay: z.number().nonnegative(),
+  substitutionRate: z.number().min(0).max(0.99).default(0.4),
+  supplementDmPercent: z.number().positive().max(100).default(88.0),
+  wastePercent: z.number().nonnegative().max(100).default(5.0),
+  headCount: z.number().int().positive().default(1),
+  feedingDays: z.number().int().positive().default(30),
+});
+
+export const weaningPlanSchema = z.object({
+  weaningWeightKg: z.number().positive(),
+  winterGdpvKgDay: z.number().nonnegative(),
+  winterDays: z.number().int().positive().default(90),
+  springGdpvKgDay: z.number().positive(),
+  targetSaleWeightKg: z.number().positive(),
+  headCount: z.number().int().positive().default(1),
+  mortalityPercent: z.number().min(0).max(100).default(1.0),
+});
+
+export const herdStockBalanceSchema = z.object({
+  initialStock: z.number().int().nonnegative(),
+  entries: z.number().int().nonnegative().default(0),
+  exits: z.number().int().nonnegative().default(0),
+  actualStock: z.number().int().nonnegative(),
+  weanedCalves: z.number().int().nonnegative().default(0),
+  breedingCows: z.number().int().nonnegative().default(0),
+});
+
+export const directCostsSchema = z.object({
+  feedingCost: z.number().nonnegative(),
+  healthCost: z.number().nonnegative(),
+  structureCost: z.number().nonnegative(),
+  otherCosts: z.number().nonnegative().default(0),
+  producedKg: z.number().positive(),
+  surfaceHa: z.number().positive().default(1),
+  salePricePerKg: z.number().positive(),
+});
+
+export const buySellMarginSchema = z.object({
+  entryWeightKg: z.number().positive(),
+  exitWeightKg: z.number().positive(),
+  feederPricePerKg: z.number().positive(),
+  fatPricePerKg: z.number().positive(),
+  addedCostPerKgGained: z.number().nonnegative(),
+});
