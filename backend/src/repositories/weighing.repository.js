@@ -106,6 +106,16 @@ class WeighingRepository {
       history: weighingsRows,
     };
   }
+
+  async updateAnimalPaddock(animalId, newPaddockId, connection = pool) {
+    const query = `
+    UPDATE animals 
+    SET paddock_id = ? 
+    WHERE id = ?
+  `;
+    const [result] = await connection.execute(query, [newPaddockId, animalId]);
+    return result.affectedRows > 0;
+  }
 }
 
 export default new WeighingRepository();

@@ -25,6 +25,34 @@ class PaddockController {
       next(error);
     }
   }
+  async moveAnimal(req, res, next) {
+    try {
+      const { animalId } = req.params;
+      const { newPaddockId } = req.body;
+
+      const updated = await paddockService.moveAnimalToPaddock(
+        Number(animalId),
+        Number(newPaddockId),
+      );
+
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "No se pudo reasignar el animal al nuevo potrero.",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return sendSuccess(
+        res,
+        { animalId, newPaddockId },
+        "Animal trasladado de potrero con éxito",
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new PaddockController();
