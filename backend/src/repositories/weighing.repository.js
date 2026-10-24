@@ -116,6 +116,52 @@ class WeighingRepository {
     const [result] = await connection.execute(query, [newPaddockId, animalId]);
     return result.affectedRows > 0;
   }
+
+  async createManualAnimalWithInitialWeight(animalData) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const insertAnimalQuery = `
+        INSERT INTO animals (rfid_tag, visual_tag, category_id, field_id, paddock_id, target_sale_weight, target_gdpv)
+        VALUES (?, ?, ?, 1, ?, ?, ?)
+      `;
+      const [animalResult] = await connection.execute(insertAnimalQuery, [
+        animalData.rfidTag,
+        animalData.visualTag || null,
+        animalData.categoryId,
+        animalData.paddockId || null,
+        animalData.targetSaleWeight,
+        animalData.targetGdpv,
+      ]);
+      const animalId = animalResult.insertId;
+
+      const clientTransactionId = `TX-MANUAL-${Date.now()}`;
+      const insertWeighingQuery = `
+        INSERT INTO weighings (client_transaction_id, animal_id, weight, weighed_at, device_id)
+        VALUES (?, ?, ?, NOW(), 'MANUAL_ENTRY')
+      `;
+      await connection.execute(insertWeighingQuery, [
+        clientTransactionId,
+        animalId,
+        animalData.initialWeight,
+      ]);
+
+      await connection.commit();
+      return animalId;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async getAllCategories() {
+    const query = `SELECT id, name, ev_coefficient FROM animal_categories ORDER BY id ASC`;
+    const [rows] = await pool.execute(query);
+    return rows;
+  }
 }
 
 export default new WeighingRepository();

@@ -4,6 +4,8 @@ import weighingRoutes from "./routes/weighing.routes.js";
 import zootechnicsRoutes from "./routes/zootechnics.routes.js";
 import paddockRoutes from "./routes/paddock.routes.js";
 import alertRoutes from "./routes/alert.routes.js";
+import animalRoutes from "./routes/animal.routes.js";
+import reportRoutes from "./routes/report.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -17,6 +19,8 @@ app.use("/api/weighings", weighingRoutes);
 app.use("/api/zootechnics", zootechnicsRoutes);
 app.use("/api/paddocks", paddockRoutes);
 app.use("/api/alerts", alertRoutes);
+app.use("/api/animals", animalRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

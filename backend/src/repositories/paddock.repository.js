@@ -40,6 +40,37 @@ class PaddockRepository {
       herd: animalRows,
     };
   }
+  async getAllPaddocks() {
+    const query = `
+      SELECT id, field_id, name, surface_ha, available_forage_kg_ha, grazing_efficiency_percent
+      FROM paddocks
+      ORDER BY id ASC
+    `;
+    const [rows] = await pool.execute(query);
+    return rows;
+  }
+
+  async createPaddock(paddockData) {
+    const {
+      fieldId,
+      name,
+      surfaceHa,
+      availableForageKgHa,
+      grazingEfficiencyPercent,
+    } = paddockData;
+    const query = `
+      INSERT INTO paddocks (field_id, name, surface_ha, available_forage_kg_ha, grazing_efficiency_percent)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const [result] = await pool.execute(query, [
+      fieldId,
+      name,
+      surfaceHa,
+      availableForageKgHa,
+      grazingEfficiencyPercent,
+    ]);
+    return result.insertId;
+  }
 }
 
 export default new PaddockRepository();

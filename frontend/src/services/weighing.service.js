@@ -4,6 +4,10 @@ export const getAnimalFiche = async (rfidTag) => {
   return await api.get(`/weighings/animal/${rfidTag}`);
 };
 
-export const syncBatchWeighings = async (payload) => {
-  return await api.post("/weighings/batch-sync", payload);
+export const getCategories = async () => {
+  return await api.get("/animals/categories");
+};
+
+export const registerAnimalManual = async (payload) => {
+  return await api.post("/animals", payload);
 };
