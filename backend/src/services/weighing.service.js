@@ -17,8 +17,14 @@ class WeighingService {
     try {
       await connection.beginTransaction();
 
-      for (const item of weighings) {
-        // 1. Control de Idempotencia: Verificar si ya fue procesada la transacción del microcontrolador
+      // Ordenar cronológicamente el lote antes de procesarlo
+      const sortedWeighings = [...weighings].sort(
+        (a, b) =>
+          new Date(a.weighedAt).getTime() - new Date(b.weighedAt).getTime(),
+      );
+
+      for (const item of sortedWeighings) {
+        // 1. Control de Idempotencia
         const alreadyExists = await weighingRepository.isTransactionProcessed(
           item.clientTransactionId,
           connection,
@@ -29,7 +35,7 @@ class WeighingService {
           continue;
         }
 
-        // 2. Trazabilidad: Obtener o dar de alta el animal por caravana RFID
+        // 2. Obtener o crear animal
         let animal = await weighingRepository.findAnimalByRfid(
           item.rfidTag,
           connection,
@@ -51,9 +57,10 @@ class WeighingService {
           animalId = animal.id;
         }
 
-        // 3. Búsqueda del pesaje cronológico previo
-        const previousWeighing = await weighingRepository.getLastWeighing(
+        // 3. Buscar el pesaje inmediatamente anterior en el tiempo
+        const previousWeighing = await weighingRepository.getPreviousWeighing(
           animalId,
+          item.weighedAt,
           connection,
         );
 
@@ -78,7 +85,7 @@ class WeighingService {
           });
         }
 
-        // 5. Inserción con métricas integradas
+        // 5. Inserción
         const insertId = await weighingRepository.insertWeighing(
           {
             clientTransactionId: item.clientTransactionId,

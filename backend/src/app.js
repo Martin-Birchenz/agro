@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import weighingRoutes from "./routes/weighing.routes.js";
 import zootechnicsRoutes from "./routes/zootechnics.routes.js";
+import paddockRoutes from "./routes/paddock.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 // Rutas de la API
 app.use("/api/weighings", weighingRoutes);
 app.use("/api/zootechnics", zootechnicsRoutes);
+app.use("/api/paddocks", paddockRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

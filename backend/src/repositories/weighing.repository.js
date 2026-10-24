@@ -24,15 +24,18 @@ class WeighingRepository {
     return result.insertId;
   }
 
-  async getLastWeighing(animalId, connection = pool) {
+  async getPreviousWeighing(animalId, currentWeighedAt, connection = pool) {
     const query = `
       SELECT id, weight, weighed_at
       FROM weighings
-      WHERE animal_id = ?
+      WHERE animal_id = ? AND weighed_at < ?
       ORDER BY weighed_at DESC
       LIMIT 1
     `;
-    const [rows] = await connection.execute(query, [animalId]);
+    const [rows] = await connection.execute(query, [
+      animalId,
+      new Date(currentWeighedAt),
+    ]);
     return rows[0] || null;
   }
 
