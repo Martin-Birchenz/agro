@@ -6,7 +6,8 @@ import {
 } from "../services/weighing.service";
 import { getPaddocksList } from "../services/paddock.service";
 import { downloadPesajesCsvUrl } from "../services/report.service";
-import { UserPlus, X, CheckCircle2, Download } from "lucide-react";
+import ManualWeighingModal from "../components/ManualWeighingModal";
+import { UserPlus, X, CheckCircle2, Download, Scale } from "lucide-react";
 
 export default function AnimalFiche() {
   const [rfidTag, setRfidTag] = useState("982000555666777");
@@ -14,12 +15,15 @@ export default function AnimalFiche() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Estados del modal de alta manual
+  // Estados del modal de alta de animal
   const [showModal, setShowModal] = useState(false);
   const [categories, setCategories] = useState([]);
   const [paddocks, setPaddocks] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
+
+  // Estado del modal de pesaje manual
+  const [showWeighingModal, setShowWeighingModal] = useState(false);
 
   const [form, setForm] = useState({
     rfidTag: "",
@@ -91,6 +95,14 @@ export default function AnimalFiche() {
     }
   };
 
+  const handleWeighingSuccess = (weighingResult) => {
+    setSuccessMsg(
+      `Pesaje de ${weighingResult.currentWeightKg} kg registrado para la caravana ${weighingResult.rfidTag}.`,
+    );
+    setRfidTag(weighingResult.rfidTag);
+    fetchFiche(weighingResult.rfidTag);
+  };
+
   return (
     <div>
       <div
@@ -112,7 +124,7 @@ export default function AnimalFiche() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <input
             type="text"
             value={rfidTag}
@@ -139,6 +151,23 @@ export default function AnimalFiche() {
             }}
           >
             Consultar
+          </button>
+          <button
+            onClick={() => setShowWeighingModal(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              backgroundColor: "var(--agro-green-dark, #15803d)",
+              color: "#fff",
+              border: "none",
+              padding: "0.5rem 1rem",
+              borderRadius: "6px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Scale size={16} /> Cargar Pesaje
           </button>
           <button
             onClick={openRegisterModal}
@@ -169,6 +198,7 @@ export default function AnimalFiche() {
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
+            marginBottom: "1rem",
           }}
         >
           <CheckCircle2 size={18} /> {successMsg}
@@ -310,7 +340,7 @@ export default function AnimalFiche() {
         </>
       )}
 
-      {/* Modal de Registro Manual */}
+      {/* Modal de Registro de Animal Nuevo */}
       {showModal && (
         <div
           style={{
@@ -552,6 +582,13 @@ export default function AnimalFiche() {
           </div>
         </div>
       )}
+
+      {/* Modal de Carga de Pesajes */}
+      <ManualWeighingModal
+        isOpen={showWeighingModal}
+        onClose={() => setShowWeighingModal(false)}
+        onSuccess={handleWeighingSuccess}
+      />
     </div>
   );
 }

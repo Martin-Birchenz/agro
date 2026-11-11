@@ -1,4 +1,6 @@
 import weighingService from "../services/weighing.service.js";
+import { manualWeighingSchema } from "../schemas/manualWeighing.schema.js";
+import { processManualWeighing } from "../services/manualWeighing.service.js";
 import { sendSuccess } from "../middlewares/response.middleware.js";
 
 class WeighingController {
@@ -15,6 +17,7 @@ class WeighingController {
       next(error);
     }
   }
+
   async getByRfid(req, res, next) {
     try {
       const { rfidTag } = req.params;
@@ -29,6 +32,21 @@ class WeighingController {
       }
 
       return sendSuccess(res, data, "Ficha zootécnica obtenida con éxito", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createManual(req, res, next) {
+    try {
+      const validatedData = manualWeighingSchema.parse(req.body);
+      const result = await processManualWeighing(validatedData);
+      return sendSuccess(
+        res,
+        result,
+        "Pesaje manual registrado y métricas zootécnicas calculadas con éxito",
+        201,
+      );
     } catch (error) {
       next(error);
     }

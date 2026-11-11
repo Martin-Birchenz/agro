@@ -11,3 +11,9 @@ export const getCategories = async () => {
 export const registerAnimalManual = async (payload) => {
   return await api.post("/animals", payload);
 };
+
+export const registerManualWeighing = async (payload) => {
+  // payload: { rfidTag, weightKg, targetWeightKg, notes, weighedAt }
+  const response = await api.post("/api/weighings/manual", payload);
+  return response.data;
+};
