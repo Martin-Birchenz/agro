@@ -1,19 +1,22 @@
 import api from "./api";
 
+export const registerManualWeighing = async (payload) => {
+  // Antes estaba "/api/weighings/manual", debe ser:
+  const data = await api.post("/weighings/manual", payload);
+  return data;
+};
+
 export const getAnimalFiche = async (rfidTag) => {
-  return await api.get(`/weighings/animal/${rfidTag}`);
+  const data = await api.get(`/weighings/fiche/${rfidTag}`);
+  return data;
 };
 
 export const getCategories = async () => {
-  return await api.get("/animals/categories");
+  const data = await api.get("/animals/categories");
+  return data;
 };
 
 export const registerAnimalManual = async (payload) => {
-  return await api.post("/animals", payload);
-};
-
-export const registerManualWeighing = async (payload) => {
-  // payload: { rfidTag, weightKg, targetWeightKg, notes, weighedAt }
-  const response = await api.post("/api/weighings/manual", payload);
-  return response.data;
+  const data = await api.post("/animals", payload);
+  return data;
 };

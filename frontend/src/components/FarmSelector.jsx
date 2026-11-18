@@ -1,6 +1,5 @@
-import React from "react";
 import { useFarm } from "../context/FarmContext";
-import { MapPin, ChevronDown } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 export default function FarmSelector() {
   const { farms, activeFarm, changeFarm, loadingFarms } = useFarm();
@@ -35,23 +34,13 @@ export default function FarmSelector() {
     >
       <MapPin size={16} color="var(--agro-green, #10b981)" />
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <span
-          style={{
-            fontSize: "0.7rem",
-            color: "var(--text-muted, #94a3b8)",
-            textTransform: "uppercase",
-            lineHeight: 1,
-          }}
-        >
-          Campo Activo
-        </span>
         <select
           value={activeFarm ? activeFarm.id : ""}
           onChange={(e) => changeFarm(e.target.value)}
           style={{
             backgroundColor: "transparent",
             border: "none",
-            color: "#fff",
+            color: "#000000",
             fontWeight: 600,
             fontSize: "0.85rem",
             cursor: "pointer",

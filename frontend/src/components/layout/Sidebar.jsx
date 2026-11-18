@@ -40,7 +40,7 @@ export default function Sidebar() {
         boxSizing: "border-box",
       }}
     >
-      <div>
+      <div style={{ textAlign: "center" }}>
         <h2
           style={{
             fontSize: "1.15rem",
@@ -49,7 +49,7 @@ export default function Sidebar() {
             color: "#f8fafc",
           }}
         >
-          Agro Gestión 🌾🐄
+          Agro Gestión
         </h2>
         <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
           ERP Agropecuario Modular

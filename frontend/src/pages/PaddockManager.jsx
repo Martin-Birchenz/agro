@@ -7,7 +7,6 @@ import {
 } from "../services/paddock.service";
 import { getZootechnicalAlerts } from "../services/alert.service";
 import {
-  Compass,
   AlertTriangle,
   ArrowRightLeft,
   CheckCircle2,
@@ -128,9 +127,6 @@ export default function PaddockManager() {
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
             Monitoreo de Potreros y Pastoreo
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-            Control de carga instantánea y dimensionamiento de franjas
-          </p>
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -290,9 +286,7 @@ export default function PaddockManager() {
               className="metric-card"
               style={{ borderLeft: "4px solid var(--agro-green)" }}
             >
-              <div className="metric-label">
-                Boyero Eléctrico (Franja Diaria)
-              </div>
+              <div className="metric-label">Boyero Eléctrico</div>
               <div
                 className="metric-value"
                 style={{ color: "var(--agro-green)" }}

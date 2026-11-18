@@ -122,18 +122,18 @@ class WeighingRepository {
     try {
       await connection.beginTransaction();
 
-      const insertAnimalQuery = `
-        INSERT INTO animals (rfid_tag, visual_tag, category_id, field_id, paddock_id, target_sale_weight, target_gdpv)
-        VALUES (?, ?, ?, 1, ?, ?, ?)
-      `;
-      const [animalResult] = await connection.execute(insertAnimalQuery, [
-        animalData.rfidTag,
-        animalData.visualTag || null,
-        animalData.categoryId,
-        animalData.paddockId || null,
-        animalData.targetSaleWeight,
-        animalData.targetGdpv,
-      ]);
+      const [animalResult] = await connection.query(
+        `INSERT INTO animals (rfid_tag, visual_tag, category_id, field_id, paddock_id, target_sale_weight, target_gdpv, entry_date)
+         VALUES (?, ?, ?, 1, ?, ?, ?, CURDATE())`,
+        [
+          animalData.rfidTag,
+          animalData.visualTag,
+          animalData.categoryId,
+          animalData.paddockId,
+          animalData.targetSaleWeight,
+          animalData.targetGdpv,
+        ],
+      );
       const animalId = animalResult.insertId;
 
       const clientTransactionId = `TX-MANUAL-${Date.now()}`;

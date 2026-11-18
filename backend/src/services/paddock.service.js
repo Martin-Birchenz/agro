@@ -4,6 +4,7 @@ import {
   calculateStockingRate,
   calculateGrazingStrip,
 } from "./zootechnics.service.js";
+import pool from "../config/db.js";
 
 class PaddockService {
   async getPaddockMetrics(paddockId) {
@@ -98,6 +99,13 @@ class PaddockService {
         asignacionPorCabezaKgDia: grazing.allowancePerHeadKgDay,
       },
     };
+  }
+  async moveAnimalToPaddock(animalId, newPaddockId) {
+    const [result] = await pool.query(
+      "UPDATE animals SET paddock_id = ? WHERE id = ?",
+      [newPaddockId, animalId],
+    );
+    return result.affectedRows > 0;
   }
 }
 
